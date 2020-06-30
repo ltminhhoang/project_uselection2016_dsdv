@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>US Election 2016</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora">
+    <style>
+        body {
+            font-family: 'Lora', serif;
+        }
+        
+        .nation-border,
+        .state-border,
+        .county-border {
+            fill: none;
+            stroke: #000000;
+        }
+
+        .county-border {
+            stroke-width: 0.1px;
+            pointer-events:all;
+            stroke-linejoin: round;
+            stroke-linecap: round;
+        }
+
+        .nation-border,
+        .state-border {
+            stroke-width: 0.5px;
+            pointer-events:none;
+        }
+        
+        .background {
+            fill: #f5f5f5;
+            fill-opacity: 0.5;
+        }
+        
+        .tooltip {
+            top: 100px;
+            left: 100px;
+            -moz-border-radius: 5px;
+            border-radius: 5px;
+            /*border: 2px solid #000;*/
+            background: #333;
+            opacity: .9;
+            color: white;
+            padding: 10px;
+            min-width: 375px;
+            min-width: 36.75vmin;
+            font-size: 2.25vmin;
+            line-height: 24pt;
+            font-family: 'Lora', serif;
+            font-weight: lighter;
+            visibility: visible;
+        }
+        
+        .tooltip.right::before {
+            content: '';
+            display: block;
+            width: 0;
+            height: 0;
+            position: absolute;
+            opacity: .9;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 8px solid #333;
+            right: -8px;
+            top: 35px;
+            /* arbitrarily set */
+        }
+        
+        .tooltip.left::before {
+            content: '';
+            display: block;
+            width: 0;
+            height: 0;
+            position: absolute;
+            opacity: .9;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            left: -8px;
+            border-right: 8px solid #333;
+            top: 35px;
+            /* arbitrarily set */
+        }
+                
+        .scaling-svg-container {
+            position: relative;
+            height: 0;
+            width: 100%;
+            padding: 0;
+        }
+        
+        .scaling-svg {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            left: -60px;
+            top:325.5px;
+        }
+        
+        .pieChart {    
+	position:absolute;
+	top:325.5px;
+	left:900px;
+	width:400px;
+	height: 300px; 
+}
+
+        .barChart {
+            position:absolute;
+            top:625.5px;
+	left:850px;
+	width:400px;
+	height: 300px; 
+        }
+        .results {
+            position:absolute;
+            top:0px;
+	left:0px;
+	width: 2856px;
+	height: 325.5px; 
+        }
+
+.slice {
+   font-size: 12pt;
+   font-family: Verdana;
+   fill: white; 
+   font-weight: bold;	
+  		} 
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="container">
+        
+        
+        <div class="row">
+            <div class="col-md-9 col-xs-9">
+                <div class="scaling-svg-container">
+                    <svg></svg>
+                </div>
+            </div>
+            
+        </div>
+        
+        <div class="row">
+            <div class="col-md-9 col-xs-9">
+                <div class="pieChart">
+                    <svg></svg>
+                </div>
+            </div>
+            
+        </div>
+        <div class="row">
+            <div class="col-md-9 col-xs-9">
+                <div class="barChart">
+                    <svg></svg>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.0.1/spin.min.js" type="text/javascript"></script>
+    <script src="https://d3js.org/d3.v4.min.js" type="text/javascript"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js" type="text/javascript"></script>
+    <script src="https://unpkg.com/topojson-client@3" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.11.0/d3-legend.js" type="text/javascript"></script>
+    <script defer type="text/javascript">
+        /*PIE CHART-------------------------------------------*/
+
+function dsPieChart(pt){
+    d3.csv("https://raw.githubusercontent.com/ltminhhoang/project_uselection2016_dsdv/master/2016ElectionResults.csv", function(data1) {
+		var i = 0;console.log(data1);
+    for (i=0 ; i<51;i++) if(pt == data1[i]["postal"]) break;
+	console.log(i);
+	var dataset = [
+			{group: data1[i]["state"], category: "Trump", measure: parseFloat(data1[i]['% trumpVotes'])/100},
+	      {group: data1[i]["state"], category: "Clinton", measure: parseFloat(data1[i]['% clintonVotes'])/100},
+          {group: data1[i]["state"], category: "Others", measure: parseFloat(data1[i]['% othersVotes'])/100}
+	      ]
+	      ;
+		  console.log(data1);
+        console.log(parseFloat(data1[1]['% othersVotes'])/100);
+        var group = "Alabama";
+        
+		const color = d3.scaleOrdinal(['#d22e32', '#2c75b7', '#45be3f']);
+	var 	width = 300,
+		   height = 300,
+		   outerRadius = Math.min(width, height) / 2,
+		   innerRadius = outerRadius * .999,   
+		   // for animation
+		   innerRadiusFinal = outerRadius * .5,
+		   innerRadiusFinal3 = outerRadius* .45
+		   //color = d3.scale.category20()    //builtin range of colors
+		   ;
+	    
+	var svg = d3.select("body").append("div").style("position", "absolute").attr("class", "pieChart")
+	     .append('svg')              //create the SVG element inside the <body>
+	     .data([dataset])                   //associate our data with the document
+	         .attr("width", width)           //set the width and height of our visualization (these will be attributes of the <svg> tag
+	         .attr("height", height)
+	     		.append("svg:g")                //make a group to hold our pie chart
+	         .attr("transform", "translate(" + outerRadius + "," + outerRadius + ")")    //move the center of the pie chart from 0, 0 to radius, radius
+				;console.log(svg);
+				
+   var arc = d3.arc()              //this will create <path> elements for us using arc data
+        	.outerRadius(outerRadius).innerRadius(innerRadius);
+   
+   // for animation
+   var arcFinal = d3.arc().innerRadius(innerRadiusFinal).outerRadius(outerRadius);
+	var arcFinal3 = d3.arc().innerRadius(innerRadiusFinal3).outerRadius(outerRadius);
+
+   var pie = d3.pie()           //this will create arc data for us given a list of values
+        .value(function(d) { return d.measure; });    //we must tell it out to access the value of each element in our data array
+
+   var arcs = svg.selectAll("g.slice")     //this selects all <g> elements with class slice (there aren't any yet)
+        .data(pie)                          //associate the generated pie data (an array of arcs, each having startAngle, endAngle and value properties) 
+        .enter()                            //this will create <g> elements for every "extra" data element that should be associated with a selection. The result is creating a <g> for every object in the data array
+            .append("svg:g")                //create a group to hold each slice (we will have a <path> and a <text> element associated with each slice)
+               .attr("class", "slice")    //allow us to style things in the slices (like text)
+               .on("mouseover", mouseover)
+    				.on("mouseout", mouseout)
+    				.on("click", up)
+    				;
+    				
+        arcs.append("svg:path")
+               .attr("fill", function(d, i) { return color(i); } ) //set the color for each slice to be chosen from the color function defined above
+               .attr("d", arc)     //this creates the actual SVG path using the associated data (pie) with the arc drawing function
+					.append("svg:title") //mouseover title showing the figures
+				   .text(function(d) { return d.data.category + ": " + (d.data.measure)*100+"%"; });			
+
+        d3.selectAll("g.slice").selectAll("path").transition()
+			    .duration(750)
+			    .delay(10)
+			    .attr("d", arcFinal )
+			    ;
+	
+	  // Add a label to the larger arcs, translated to the arc centroid and rotated.
+	  // source: http://bl.ocks.org/1305337#index.html
+	  arcs.filter(function(d) { return d.endAngle - d.startAngle > .2; })
+	  		.append("svg:text")
+	      .attr("dy", ".35em")
+	      .attr("text-anchor", "middle")
+	      .attr("transform", function(d) { return "translate(" + arcFinal.centroid(d) + ")rotate(" + angle(d) + ")"; })
+	      //.text(function(d) { return formatAsPercentage(d.value); })
+	      .text(function(d) { return d.data.category; })
+	      ;
+	   
+	   // Computes the label angle of an arc, converting from radians to degrees.
+		function angle(d) {
+		    var a = (d.startAngle + d.endAngle) * 90 / Math.PI - 90;
+		    return a > 90 ? a - 180 : a;
+		}
+		    
+		svg.append("circle")
+                .attr("fill", "white")
+                .attr("r", innerRadiusFinal3);
+		// Pie chart title			
+		svg.append("text")
+	     	.attr("dy", ".35em")
+	      .attr("text-anchor", "middle")
+          .attr("font-family", "sans-serif")
+                           .attr("font-size", "20px")
+          //.attr("class","background")
+	      .text(data1[i]["state"])
+	      //.attr("class","title")
+	      ;		    
+
+	function mouseover() {
+	  d3.select(this).select("path").transition()
+	      .duration(500)
+	        		//.attr("stroke","red")
+	        		//.attr("stroke-width", 1.5)
+	        		.attr("d", arcFinal3)
+	        		;
+	}
+	
+	function mouseout() {
+	  d3.select(this).select("path").transition()
+	      .duration(500)
+	        		//.attr("stroke","blue")
+	        		//.attr("stroke-width", 1.5)
+	        		.attr("d", arcFinal)
+	        		;
+	}
+	
+	function up(d, i) {
+	
+				updateBarChart(d.data.category, color(i));
+				updateLineChart(d.data.category, color(i));
+			 
+	}
+});}
+
+dsPieChart("AL");
+
+        function dsBarChart(pt){
+            d3.csv("https://raw.githubusercontent.com/ltminhhoang/project_uselection2016_dsdv/master/2016ElectionResults.csv", function(data1) {
+		var i = 0;console.log(data1);
+    for (i=0 ; i<51;i++) if(pt == data1[i]["postal"]) break;
+	console.log(i);
+	var dataset = [
+        {group: data1[i]["state"], category: "Others", measure: parseFloat(data1[i]['% othersVotes'])},
+        {group: data1[i]["state"], category: "Clinton", measure: parseFloat(data1[i]['% clintonVotes'])},
+			{group: data1[i]["state"], category: "Trump", measure: parseFloat(data1[i]['% trumpVotes'])}     
+          
+	      ]
+	      ;
+          console.log(parseFloat(data1[i]['% trumpVotes']));
+          var color = d3.scaleSequential(d3.interpolateInferno)
+    .domain([0, width])
+	
+          var group = "Alabama";
+          var margin = {
+    top: 100,
+    right: 20,
+    bottom: 30,
+    left: 100
+  },
+  width = 400 - margin.left - margin.right,
+  height = 200 - margin.top - margin.bottom;
+
+var y = d3.scaleBand()
+  .range([height, 0])
+  .domain(dataset.map(function (d) {
+                return d.category;
+            }))
+  .padding(0.4);
+
+var x = d3.scaleLinear()
+  .range([0, width])
+  .domain([0, 100]);
+//var svg= d3.select("body").attr("fill","white");
+var svg = d3.select("body").append("svg").attr("class", "barChart")
+  .attr("width", 500)
+  .attr("height", 200)
+  .append("g")
+  //.attr("fill","white")
+  .attr("transform",
+    "translate(" + margin.left + "," + margin.top + ")");
+svg.append("rect").attr("width", width).attr("height",height).attr("fill","white");
+
+
+var backgroundBar = svg.selectAll(null)
+  .data(dataset)
+  .enter()
+  .append("rect")
+  .attr("fill", "lightgray")
+  .attr("y", function(d) {
+							return y(d.category);
+					})
+  .attr("height", y.bandwidth())
+  .attr("width", function(d) {
+    return x(100);
+  });
+
+var bar = svg.selectAll(null)
+  .data(dataset)
+  .enter()
+  .append("rect")
+  .attr("class", "bar")
+  .attr("y", function(d) {
+							return y(d.category);
+					})
+  .attr("height", y.bandwidth())
+  .transition()
+  .duration(2000)
+  .delay(function(d, i) {
+    return i * 100
+  })
+  .attr("fill", function(d,i){
+      if (i==0) return "#45be3f";
+      if (i==1) return "#2c75b7";
+      if (i==2) return "#d22e32";
+  })
+  .attr("width", function(d) {
+    return x(d.measure);
+  });
+
+var labels = svg.selectAll(null)
+  .data(dataset)
+  .enter()
+  .append("text")
+  .attr("y", function(d) {
+							return y(d.category) + y.bandwidth() / 2;
+					})
+  .attr("x", -10)
+  .attr("text-anchor", "end")
+  .text(function(d) {
+							return d.category;
+					})
+                    .attr("fill", function(d,i){
+      if (i==0) return "#45be3f";
+      if (i==1) return "#2c75b7";
+      if (i==2) return "#d22e32";
+  })
+
+var values = svg.selectAll(null)
+  .data(dataset)
+  .enter()
+  .append("text")
+  .attr("y", function(d) {
+							return y(d.category) + y.bandwidth() / 2;
+					})
+  .attr("x", 10)
+  .text(function(d) {
+							return d.measure+"%";
+					})
+  .transition()
+  .duration(2000)
+  .delay(function(d, i) {
+    return i * 100
+  })
+  .attr("fill", function(d,i){
+      if (i==0) return "#45be3f";
+      if (i==1) return "#2c75b7";
+      if (i==2) return "#d22e32";
+  })
+  .attr("x", function(d) {
+    return x(d.measure) + 10;
+  });
+            });
+        }
+        dsBarChart("AL");
+        function Results(){
+            
+
+var svg = d3.select("body").append("svg").attr("class", "results")
+  .attr("width", 2856)
+  .attr("height", 325.5)
+  .append("g");
+
+svg.append('image')
+.attr('xlink:href', "https://raw.githubusercontent.com/ltminhhoang/project_uselection2016_dsdv/master/US_Election_2016.ico")
+  .attr("x",-800)
+  .attr("y",0)
+  //.attr("size",1000)
+  .attr("width", 2856)
+  .attr("height", 325.5);
+
+        }Results();
+        //"use strict";
+        function createUsMap(){
+        // default view for map
+        var measure = 'countywinrate';
+
+        // define data and its attributes
+        const cols = {
+            "countywinrate": {
+                "label": "County Win Rate",
+                "type": "percentage",
+                "format": ".1%"
+            }};
+
+        // create tooltip
+        var tooltip = d3.select("body").append("div").style("position", "absolute").style("z-index", "10").style("visibility", "hidden").attr("class", "tooltip");
+
+        // select element
+        var measureSelect = d3.select('#dimensions');
+
+        var width = 960;
+        var height = 720;
+
+        var projection = d3.geoAlbersUsa()
+            .scale(1285)
+            .translate([width / 2, height / 2]);
+
+            var path = d3.geoPath()
+            .projection(null);
+
+        var d3legend = d3.legendColor()
+            .shapeWidth(width / 10)
+            .cells(9)
+            .orient("horizontal")
+            .labelOffset(3)
+            .ascending(true)
+            .labelAlign("middle")
+            .shapePadding(2);
+
+            var svg = d3.select("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        var countyObj = {};
+        //let stateObj = {};
+        function createMap(error, us, data) {
+            if (error) throw error;
+            // parse data
+            data.forEach(function(d) {
+                d.countywinrate = +(d['County Win Rate'] * -1).toPrecision(3);
+                countyObj[d.FIPS] = d;
+            });
+
+            var centered;
+            function renderMap() {
+                // counter for missing counties (usually in Alaska)
+                var countMissing = 0;
+                var extent = d3.extent(data, function(d) {
+                    return countyObj[d.FIPS][measure];
+                });
+
+                var color = d3.scaleSequential().interpolator(measure == 'countywinrate' ? d3.interpolateRdBu : d3.interpolateOranges);
+                color.domain(measure == 'countywinrate' ? [-100, 100] : [extent[0], extent[1]]);
+
+                d3legend
+                    .labelFormat(function(d) {
+                        var value;
+
+                        if (cols[measure].type == 'percentage') {
+                            //value = measure == 'countywinrate' ? Math.abs(d/100) : (d / 100);
+                            value = Math.abs(d/100) ;
+                        }
+                        else {
+                            //value = measure == 'countywinrate' ? Math.abs(d) : d;
+                            value = Math.abs(d) ;
+                        }
+                        return d3.format(cols[measure].format)(value);
+                    })
+                    .title(cols[measure].label)
+                    .scale(color);
+
+                // if legend already exists, remove and create again
+                svg.select('.legend').remove();
+
+                // create legend
+                var legend = svg.append("g")
+                    .attr("class", "legend")
+                    .attr("transform", "translate(" + (width / 24) + "," + (height * 6 / 7) + ")");
+
+                legend
+                    .call(d3legend);
+
+                countyPath
+                    .transition()
+                    .duration(1000)
+                    .style("fill", function(d) {
+                        var county = countyObj[d.id];
+                        if (county && county[measure] === null) {
+                            console.log("FIPS Code: " + d.id + " " + countyObj[d.id].County + " does not have data");
+                            return '#ccc';
+                        }
+                        else if (county) {
+                            return color(county[measure]);
+                        }
+                        else {
+                            countMissing++;
+                            console.log("FIPS Code: " + d.id + " not found. Error #" + countMissing);
+                            return '#ccc';
+                        }
+                    });
+                    
+            }
+
+            // define zoom function
+            function zoomed() {
+                group.attr("transform", d3.event.transform);
+            }
+            console.log(data.id);
+            // When clicked, zoom in
+            function clicked(d) {
+                var x, y, k;
+                console.log(d.id);
+                data.forEach(function(h) {
+               if(h.id == d.id) {
+                   dsPieChart(h.State);
+                   dsBarChart(h.State);
+            }});
+                // Compute centroid of the selected path
+                if (d && centered !== d ) {
+                    // if (d) {
+                    var centroid = path.centroid(d);
+                    x = centroid[0];
+                    y = centroid[1];
+                    // k = zoom.scaleExtent()[1];
+                    k = 10;
+                    centered = d;
+                }
+                else {
+                    x = width / 2;
+                    y = height / 2;
+                    k = 1;
+                    centered = null;
+                }
+                
+                // Manually Zoom
+                svg.transition()
+                    .duration(750)
+                    .call(zoom.transform, d3.zoomIdentity
+                        .translate(width / 2, height / 2)
+                        .scale(k)
+                        .translate(-x, -y));
+            }
+
+            // create background box for zoom
+            svg.append("rect")
+                .attr("class", "background")
+                .attr("width", width)
+                .attr("height", height);
+
+                var zoom = d3.zoom()
+                .scaleExtent([1, 15])
+                .on("zoom", zoomed);
+
+            svg.style("pointer-events", "all")
+                .call(zoom);
+
+                var group = svg.append("g");
+            
+                var countyPath = group.selectAll(".counties")
+                .data(topojson.feature(us, us.objects.counties).features)
+                .enter()
+                .append('path')
+                .attr("class", "county-border")
+                .on("click", clicked)
+                .attr("d", path);
+                
+            group.append("path")
+                .datum(topojson.mesh(us, us.objects.states, function(a, b) {
+                    return a !== b;
+                }))
+                .text(us.objects.states)
+                .attr("class", "state-border")
+                .attr("d", path);
+                console.log(us.objects.states);
+            group.append("path")
+                .datum(topojson.feature(us, us.objects.nation))
+                .attr("class", "nation-border")
+                .attr("d", path);
+
+            
+            renderMap();
+            bindHover();
+            setResponsiveSVG();
+
+            measureSelect.on('change', function(d) {
+                measure = this.value;
+                renderMap();
+                
+            });
+
+        }
+        function bindHover() {
+            document.body.addEventListener('mousemove', function(e) {
+
+                if (e.target.nodeName == 'path' && e.target.className.animVal !== 'state-border') {
+                    var d = d3.select(e.target).data()[0];
+                    var ClintonVotes = countyObj[d.id]['% Democratic Vote'];
+                    var TrumpVotes = countyObj[d.id]['% GOP Vote'];
+                    var content = '';
+                    if (ClintonVotes === null) {
+                        content = countyObj[d.id].County + ', ' + countyObj[d.id].State + '<br>' + 'No data';
+                    } else {
+                        ClintonVotes = Math.abs(ClintonVotes/100);
+                        TrumpVotes = Math.abs(TrumpVotes/100);
+                        content = countyObj[d.id].County + ', ' + countyObj[d.id].State + '<br>' + 'Voted for Clinton: ' + d3.format(cols[measure].format)(ClintonVotes) + '<br>' + 'Voted for Trump: ' + d3.format(cols[measure].format)(TrumpVotes);
+                    }
+                    
+                    showDetail(e, content);
+                }
+            });
+
+            document.body.addEventListener('mouseout', function(e) {
+                if (e.target.nodeName == 'path') hideDetail();
+            });
+        }
+
+        // Show tooltip on hover
+        function showDetail(event, content) {
+
+            // show tooltip with information from the __data__ property of the element
+            var x_hover = 0;
+            var y_hover = 0;
+
+            var tooltipWidth = parseInt(tooltip.style('width'));
+            var tooltipHeight = parseInt(tooltip.style('height'));
+            var classed, notClassed;
+
+            if (event.pageX > document.body.clientWidth / 2) {
+                x_hover = tooltipWidth + 30;
+                classed = 'right';
+                notClassed = 'left';
+            }
+            else {
+                x_hover = -30;
+                classed = 'left';
+                notClassed = 'right';
+            }
+
+            y_hover = (document.body.clientHeight - event.pageY < (tooltipHeight + 4)) ? event.pageY - (tooltipHeight + 4) : event.pageY - tooltipHeight / 2;
+
+            return tooltip
+                .classed(classed, true)
+                .classed(notClassed, false)
+                .style("visibility", "visible")
+                .style("top", y_hover + "px")
+                .style("left", (event.pageX - x_hover) + "px")
+                .html(content);
+        }
+
+        // Hide tooltip on hover
+        function hideDetail() {
+
+            // hide tooltip
+            return tooltip.style("visibility", "hidden");
+        }
+        function setResponsiveSVG() {
+            var width = +d3.select('svg').attr('width');
+            var height = +d3.select('svg').attr('height');
+            var calcString = +(height / width) * 100 + "%";
+
+            var svgElement = d3.select('svg');
+            var svgParent = d3.select(d3.select('svg').node().parentNode);
+
+            svgElement
+                .attr('class', 'scaling-svg')
+                .attr('preserveAspectRatio', 'xMinYMin')
+                .attr('viewBox', '0 0 ' + width + ' ' + height)
+                .attr('width', null)
+                .attr('height', null);
+
+            svgParent.style('padding-bottom', calcString);
+        }
+
+        d3.queue()
+            .defer(d3.json, "https://unpkg.com/us-atlas@1/us/10m.json")
+            .defer(d3.csv, "https://raw.githubusercontent.com/tonmcg/us-presidential-election-results/master/public/data/chr.csv")
+            .await(createMap);
+    }
+        createUsMap();
+        
+var 	formatAsPercentage = d3.format("%"),
+		formatAsPercentage1Dec = d3.format(".1%"),
+		formatAsInteger = d3.format(",")
+		;
+
+
+
+    </script>
+</body>
+
+</html>
